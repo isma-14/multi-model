@@ -5,21 +5,33 @@ from io import BytesIO
 
 st.title("Image Viewer - Multi Model Application")
 
-# Upload image via Streamlit
-uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
+flask_url = 'http://15.207.113.67:5000'  # Update with your EC2 public IP if different
 
-if uploaded_file:
-    # Display uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image', use_column_width=True)
-
-    # Send image to Flask backend
-    flask_url = 'http://15.207.113.67:5000/upload'  # Change this to EC2 public IP when deploying
-    files = {'file': (uploaded_file.name, uploaded_file.getvalue())}
-    response = requests.post(flask_url, files=files)
-
+# Fetch and display image history
+def fetch_image_history():
+    response = requests.get(f"{flask_url}/history")
     if response.status_code == 200:
-        result = response.json()
-        st.success(f"Image Type: {result['image_type']}")
+        return response.json()
     else:
-        st.error(f"Error: {response.text}")
+        st.error("Failed to fetch image history.")
+        return []
+
+# Display uploaded images history
+st.header("Uploaded Images History")
+image_history = fetch_image_history()
+
+if image_history:
+    for item in reversed(image_history):  # Show latest first
+        st.subheader(f"Image: {item['filename']}")
+        st.write(f"Type: {item['image_type']}")
+        st.write(f"Uploaded At: {item['timestamp']}")
+
+        # Fetch and display the image
+        image_response = requests.get(f"{flask_url}/uploads/{item['filename']}")
+        if image_response.status_code == 200:
+            image = Image.open(BytesIO(image_response.content))
+            st.image(image, caption=item['filename'], use_column_width=True)
+        else:
+            st.warning("Unable to load image.")
+else:
+    st.write("No images uploaded yet.")
