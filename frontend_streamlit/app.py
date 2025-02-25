@@ -14,7 +14,7 @@ if uploaded_file:
     st.image(image, caption='Uploaded Image', use_column_width=True)
 
     # Send image to Flask backend
-    flask_url = 'http://localhost:5000/upload'  # Change this to EC2 public IP when deploying
+    flask_url = 'http://15.207.113.67:5000/upload'  # Change this to EC2 public IP when deploying
     files = {'file': (uploaded_file.name, uploaded_file.getvalue())}
     response = requests.post(flask_url, files=files)
 
